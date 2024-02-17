@@ -1,17 +1,54 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "../api/axios";
 
 export default function Bejelentkezes() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [errors, setErrors] = useState({
+        name:"hiba",
+        email:"hiba",
+        password:"hiba",
+        password_confirmation:"hiba",
+    });
+
+    const csrf = () => axios.get("/sanctum/csrf-cookie");
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        //bejelentkezés
+        //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+        const adat = {
+            email: email,
+            password: password,
+        };
+        // A hívás előtt lekérjük  a csrf cookie-t
+        await csrf();
+        // Megrpóbáljuk elküldeni a /login végpontra az adatot
+        // hiba esetén kiiratjuk a hibaüzenetet
+        try {
+            await axios.post("/login", { adat });
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     return (
         <div className="m-auto" style={{ maxWidth: "400px" }}>
             <h1 className="text-center">Bejelentkezés</h1>
-            <form>
+            <form onSubmit={handleSubmit}>
                 <div className="mb-3 mt-3">
                     <label htmlFor="email" className="form-label">
                         Email:
                     </label>
                     <input
                         type="email"
+                        // value beállítása a state értékére
+                        value={email}
+                        // state értékének módosítása ha változik a beviteli mező tartalma
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                        }}
                         className="form-control"
                         id="email"
                         placeholder="email"
@@ -19,7 +56,9 @@ export default function Bejelentkezes() {
                     />
                 </div>
                 <div>
-                    <span className="text-danger">hiba</span>
+                    {errors.email && (
+                        <span className="text-danger">{errors.email[0]}</span>
+                    )}
                 </div>
                 <div className="mb-3">
                     <label htmlFor="pwd" className="form-label">
@@ -27,13 +66,21 @@ export default function Bejelentkezes() {
                     </label>
                     <input
                         type="password"
+                        value={password}
+                        onChange={(e) => {
+                            setPassword(e.target.value);
+                        }}
                         className="form-control"
                         id="pwd"
                         placeholder="jelszó"
                         name="pwd"
                     />
                     <div>
-                        <span className="text-danger">hiba</span>
+                        {errors.password && (
+                            <span className="text-danger">
+                                {errors.password[0]}
+                            </span>
+                        )}
                     </div>
                 </div>
 

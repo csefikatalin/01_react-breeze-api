@@ -157,14 +157,14 @@ A **pages** mappában hozzuk létre az alábbi oldalakat egy alap function kompo
 
     export default App;
 
-##  Bejelentkezés és Regisztrációs formok létrehozása
+## Bejelentkezés és Regisztrációs formok létrehozása
 
-### Bejelentkezés form 
+### Bejelentkezés form
 
-A Bejelentkezés oldalon hozzunk létre az alábbi mintának megfelelő formot. 
-Minden beviteli mező alatt van egy div, ahova az esetleges hibaüzeneteket jelenítjük meg. 
+A Bejelentkezés oldalon hozzunk létre az alábbi mintának megfelelő formot.
+Minden beviteli mező alatt van egy div, ahova az esetleges hibaüzeneteket jelenítjük meg.
 
-A Regisztráció feliratra kattintva navigáljunk a regisztráció oldalra. 
+A Regisztráció feliratra kattintva navigáljunk a regisztráció oldalra.
 
 <img src="public/readme_kepek/login.PNG" alt="Bejelentkezés képernyőkép">
 
@@ -224,16 +224,250 @@ A Regisztráció feliratra kattintva navigáljunk a regisztráció oldalra.
         );
     }
 
+### Regisztrációs form
 
-### Regisztrációs form 
-
-Hasonló módon hozzuk létre a regisztráció oldal formját is. 
+Hasonló módon hozzuk létre a regisztráció oldal formját is.
 
 <img src="public/readme_kepek/registracio.PNG" alt="Regisztrációs képernyőkép">
 
+## Regisztráció és a Bejelentkezés logikája
+
+Űrlapok beviteli mezőinek kezelése state-kkel történik, ezért a Bejelentkezés komponensben hozzunk létre az email és a password mezőkhöz state-t.
+Ne felejtsük el importálni az useState react hook-ot!
+
+### Bejelentkezés
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+Majd az input mezőkhöz helyezzük el a value tulajdonsághoz a megfelelő state értékét,
+valamint a beviteli mező onChange eseményéhez a érték setterével állítsuk be a bevitt adatot.
+
+pl. az email mező esetében most így alakul az input elem.
+
+    <input
+        type="email"
+
+        // value beállítása a state értékére
+        value={email}
+        // state értékének módosításváltozik a beviteli mező tartalma
+        onChange={(e) => {
+            setEmail(e.target.value);
+        }}
+
+        className="form-control"
+        id="email"
+        placeholder="email"
+        name="email"
+    />
+
+A form onSubmit eseményéhze pedig rendeljünk egy függvényt. Első lépésben szedjük le a submit gombról a hozzá rendelt alapértelmezett eseménykezelőt.
+
+    function handleSubmit(e){
+        e.preventDefault();
+        //bejelentkezés kezelése
+    }
+
+### Regisztráció
+
+Regisztráció esetén 4 state értékre van szükség
+
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [password_confirmation, setPasswordConfirmation] = useState("");
+
+### handleSubmit függvény - a bejelentkezési és regisztrációs adatok elküldése
+
+Ebben a metódusban fogjuk elküldeni az adatokat a szerver felé axios segítségével asszinkron módon.
+
+#### AXIOS alapértelmezett beállításai
+
+Az api/axios.js fájlba írjuk az alábbi kódot:
+
+-   importáljuk az Axios objektumot
+-   létrehozunk egy új Axios példányt a create metódus segítsével.
+-   megadjuk, hogy a kérések azonosítása coockie-k segítségével történik.
+
+    import Axios from "axios";
+
+    export default Axios.create({  
+     baseURL:"http://localhost:8000/",
+    withCredentials:true,
+    })
+
+#### Bejelentkezés  logikája
+
+A **Bejelentkezes** komponensbe importáljuk be az előbb létrehozott saját axios-unkat. 
+
+    import  axios  from "../api/axios";
+
+Mostmár használhatjuk az axios post és get metódusait. Mivel ezek asszinkron hívások, ezért a handleSubmit függvényünket át kell alakítanuk asszinkron hívások kezelésére az alábbi módon.
+
+- Összegyűjtjük egyetlen objektumban az űrlap adatokat
+- Megpróbáljuk elküldeni a /login végpontra az adatot
+- Hiba esetén kiiratjuk a hibaüzenetet 
 
 
-2.  Login és Register formok létrehozása
-3.  Regisztráció és a Bejelentkezés logikája
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        //bejelentkezés
+        //Összegyűjtjük egyetlen objektumban az űrlapadatokat
+        const adat={
+            email:email,
+            password:password
+        }
+        // Megrpóbáljuk elküldeni a /login végpontra azadatot
+        //hiba esetén kiiratjuk a hibaüzenetet 
+        try {
+            await axios.post("/login", {adat});
+        } catch (error) {
+            console.log(error)
+        }
+    };
+
+Hasonló módon kell eljárni a Regisztráció esetén is. 
+
+Ha most megpróbálunk regisztrálni a rendszerbe 419-es hibát kapunk. 
+Ennek oka, hogy nem azonosítottuk magunkat a szerver számára, ezért a szerver elutasította a kérésünket. A post kéréssel együtt el kell küldenünk a csrf tokent is, ami a kérésünk azonosítására szolgál. 
+
+![419 CSRF token mismatch](./public/readme_kepek/error419.PNG)
+
+A CSRF token felhasználónként egyedi kód, amit a weboldalak arra használnak, hogy a segítségével kivédjék az olyan támadásokat, amiknél illetéktelen felek egy felhasználó nevében küldenek a weboldalnak parancsokat (CSRF támadás).
+Amikor egy felhasználó valamilyen kritikus funkciót próbál meg elérni egy weboldalon (például törlés vagy jelszóváltoztatás), akkor ahhoz ezt a korábban kapott tokent is el kell küldje a böngészője a szervernek. Mivel a token minden felhasználónál más és más, és nem lehet egyszerűen kitalálni, ezért a CSRF támadás tervezői nem tudják a parancsot a felhasználó nevében elküldeni, mert ahhoz a tokent is tudniuk kellene.
+
+Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mismatch" vagy hasonló hibaüzenetet kapsz, az azt jelenti, hogy a böngésződ által küldött kód hibás. Ez előfordulhat például amiatt, hogy időközben egy másik ablakban kijelentkeztél az oldalról, vagy már nagyon rég nyitottad meg az oldalt, és a token azóta megváltozott vagy a cookie‑d lejárt. 
+
+
+#### CSRF azonosító token beépítése
+
+Helyezzük el a Bejelentkezés és a Regisztráció komponensekben si a következő sort: 
+
+const csrf = () => axios.get("/sanctum/csrf-cookie");
+
+Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF toketn. Ezt a tokent kell visszaküldenünk a post kérésünkkel együtt ahhoz, hogy azonosítva legyünk, és  a szerver tudja, hogy jogosan használjuk a végpontjait. 
+
+Most így néz ki a login kód: 
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import  axios  from "../api/axios";
+
+    export default function Bejelentkezes() {
+        const [email, setEmail] = useState("");
+        const [password, setPassword] = useState("");
+
+        const csrf = () => axios.get("/sanctum/csrf-cookie");
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            //bejelentkezés
+            //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+            const adat={
+                email:email,
+                password:password
+            }
+            // A hívás előtt lekérjük  a csrf cookie-t
+            await csrf()
+            // Megrpóbáljuk elküldeni a /login végpontra az adatot
+            // hiba esetén kiiratjuk a hibaüzenetet 
+            try {
+                await axios.post("/login", adat);
+            } catch (error) {
+                console.log(error)
+            }
+        };
+
+        return (
+            <div className="m-auto" style={{ maxWidth: "400px" }}>
+                <h1 className="text-center">Bejelentkezés</h1>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3 mt-3">
+                        <label htmlFor="email" className="form-label">
+                            Email:
+                        </label>
+                        <input
+                            type="email"
+                            // value beállítása a state értékére
+                            value={email}
+                            // state értékének módosítása ha változik a beviteli mező tartalma
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                            }}
+                            className="form-control"
+                            id="email"
+                            placeholder="email"
+                            name="email"
+                        />
+                    </div>
+                    <div>
+                        <span className="text-danger">hiba</span>
+                    </div>
+                    <div className="mb-3">
+                        <label htmlFor="pwd" className="form-label">
+                            Jelszó:
+                        </label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                            }}
+                            className="form-control"
+                            id="pwd"
+                            placeholder="jelszó"
+                            name="pwd"
+                        />
+                        <div>
+                            <span className="text-danger">hiba</span>
+                        </div>
+                    </div>
+
+                    <div className=" text-center">
+                        <button type="submit" className="btn btn-primary w-100">
+                            Login
+                        </button>
+
+                        <p>
+                            Még nincs felhaszálóneve?
+                            <Link className="nav-link text-info" to="/regisztracio">
+                                Regisztráció
+                            </Link>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        );
+    }
+
+#### Hibakezelés
+
+Amennyiben nem megfelelő adatokat adunk meg, az api kiszolgáló 422-es hibakóddal tér vissza, és kiolvashatjuk a válaszból a megfelelő mezőkhöz tartozó hibákat. 
+
+
+![422-es hiba ](./public/readme_kepek/hibakezeles.PNG)
+
+
+Ehhez szükségünk van egy új state-re a Bejelentkezés és a Regisztráció komponensekben.
+
+    const [errors, setErrors] = useState("");
+
+Az inputmezők mögötti div-eket cseréljük le ilyesmi kódra:
+
+    <div>
+        {errors.email && (
+            <span className="text-danger">{errors.email[0]}</span>
+        )}
+    </div>
+
+Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint: . 
+
+    } catch (e) {
+        if (e.response.status === 422) {
+            setErrors(e.response.data.errors);
+        }
+    }
+
+
 4.  AuthContext létrehozása
 5.  Layoutok kialakítása
