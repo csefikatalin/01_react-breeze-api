@@ -1,70 +1,164 @@
-# Getting Started with Create React App
+# REACT frontend laravel Breeze API végpontokhoz
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Bejelentkezés és Regisztráció
 
-## Available Scripts
+1. **laravel telepítése**: composer create-project laravel/laravel laravel-breeze-api
+2. **breeze telepítése**: composer require laravel/breeze --dev
+3. **breeze api telepítése**: php artisan breeze:install api
+4. a routes/auth.php fájlban vannak a használható végpontok. Ehhez kapcsolódunk frontenden.
+5. env fájlban állítsuk be az adatbázis elérhetőségeket.
+6. migráljuk az adatbázist
+7. env. php ban be kell állítani a forntend elérés értékeit:
+   APP_URL=http://localhost:8000
+   FRONTEND_URL=http://localhost:3000
+   SANCTUM_STATEFUL_DOMAINS=localhost:3000
+   SESSION_DOMAIN=localhost
 
-In the project directory, you can run:
+## Frontend létrehozása és beállításai
 
-### `npm start`
+Hozzuk létre a react projektet és telepítsük hozzá a React routert, bootstrapet és az axiost
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### React telepítése:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+    npx create-react-app frontend
 
-### `npm test`
+Nyisd meg VS Code-ban és indítsd el!
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+    npm start
 
-### `npm run build`
+### Csomagok telepítése
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+-   react router telepítése, majd importáljuk az index.js fájlba és helyezük el a <BrowserRouter> komponenst az App komponens köré
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+    npm install react-router-dom
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    import { BrowserRouter } from "react-router-dom";
 
-### `npm run eject`
+    <React.StrictMode>
+    <BrowserRouter>
+    <App />
+    </BrowserRouter>
+    </React.StrictMode>
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+-   bootstrap telepítése,majd importáljuk az index.js fájlba.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    npm install react-bootstrap bootstrap
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+-   axios
+    npm install axios
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Mappastruktúra kialakítása
 
-## Learn More
+-   pages: itt fogjuk tárolni az egyes oldalakat
+-   layouts: itt fogjuk tárolni a különböző jogosultságokhoz tartozó menüket, elrendezéseket.
+-   components: itt fogjuk tárolni az oldalakat felépítő komponenseket
+-   api: itt fogjuk tárolni az axios beállításait
+-   contexts: itt fogjuk tárolni a contextusokat, providereket.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Route és a navigáció
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Oldalak létrehozása
 
-### Code Splitting
+A **pages** mappában hozzuk létre az alábbi oldalakat egy alap function komponens segítségével
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+-   Kezdolap
+-   Bejelentkezes
+-   Regisztracio
 
-### Analyzing the Bundle Size
+#### App.js fájlban alakítsuk ki az útvonalakat
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+    import { Route, Routes } from "react-router-dom";
+    import Kezdolap from "./pages/Kezdolap";
+    import Bejelentkezes from "./pages/Bejelentkezes";
+    import Regisztracio from "./pages/Regisztracio";
+    import VendegLayout from "./layouts/VendegLayout";
 
-### Making a Progressive Web App
+    function App() {
+        return (
+            <Routes>
+                <Route path="/" element={<VendegLayout />}>
+                    <Route index element={<Kezdolap />} />
+                    <Route path="bejelentkezes" element={<Bejelentkezes />} />
+                    <Route path="regisztracio" element={<Regisztracio />} />
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+                </Route>
+            </Routes>
+        );
+    }
 
-### Advanced Configuration
+    export default App;
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+#### Menü kialakítása a Navigacio komponensben
 
-### Deployment
+    import React from "react";
+    import { Link } from "react-router-dom";
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+    export default function Navigacio() {
+        return (
+            <nav className="navbar navbar-expand-sm bg-light">
+                <div className="container-fluid">
+                    <ul className="navbar-nav">
+                        <li className="navbar-item">
+                            <Link className="nav-link" to="/">
+                                Kezdőlap
+                            </Link>
+                        </li>
+                        <li className="navbar-item">
+                            <Link className="nav-link" to="/bejelentkezes">
+                                Bejelentkezés
+                            </Link>
+                        </li>
+                        <li className="navbar-item">
+                            <Link className="nav-link" to="/regisztracio">
+                                Regisztráció
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        );
+    }
 
-### `npm run build` fails to minify
+#### Layout kialakítása - VendegLayout létrehozása a layouts mappában
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+    import React from "react";
+    import Navigacio from "../pages/Navigacio";
+    import { Outlet } from "react-router-dom";
+
+    export default function VendegLayout() {
+        return (
+            <>
+                <Navigacio />
+                <Outlet />
+            </>
+        );
+    }
+
+#### Az App.js-ben állítsuk be a Layoutot a menüpontokhoz.
+
+    import { Route, Routes } from "react-router-dom";
+    import Kezdolap from "./pages/Kezdolap";
+    import Bejelentkezes from "./pages/Bejelentkezes";
+    import Regisztracio from "./pages/Regisztracio";
+    import VendegLayout from "./layouts/VendegLayout";
+
+    function App() {
+        return (
+            <Routes>
+                <Route path="/" element={<VendegLayout />}>
+                    <Route index element={<Kezdolap />} />
+                    <Route path="bejelentkezes" element={<Bejelentkezes />} />
+                    <Route path="regisztracio" element={<Regisztracio />} />
+
+                </Route>
+            </Routes>
+        );
+    }
+
+    export default App;
+
+1.  Menü és Route-ok kialakítása, Page komponensek létrehozása
+2.  Login és Register formok létrehozása
+3.  Regisztráció és a Bejelentkezés logikája
+4.  AuthContext létrehozása
+5.  Layoutok kialakítása

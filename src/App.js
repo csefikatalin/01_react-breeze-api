@@ -1,25 +1,20 @@
-import logo from './logo.svg';
-import './App.css';
+import { Route, Routes } from "react-router-dom";
+import Kezdolap from "./pages/Kezdolap";
+import Bejelentkezes from "./pages/Bejelentkezes";
+import Regisztracio from "./pages/Regisztracio";
+import VendegLayout from "./layouts/VendegLayout";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    return (
+        <Routes>
+            <Route path="/" element={<VendegLayout />}>
+                <Route index element={<Kezdolap />} />
+                <Route path="bejelentkezes" element={<Bejelentkezes />} />
+                <Route path="regisztracio" element={<Regisztracio />} />
+              
+            </Route>
+        </Routes>
+    );
 }
 
 export default App;
