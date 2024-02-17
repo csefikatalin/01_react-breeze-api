@@ -6,10 +6,10 @@ export default function Bejelentkezes() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState({
-        name:"hiba",
-        email:"hiba",
-        password:"hiba",
-        password_confirmation:"hiba",
+        name: "hiba",
+        email: "hiba",
+        password: "hiba",
+        password_confirmation: "hiba",
     });
 
     const csrf = () => axios.get("/sanctum/csrf-cookie");
@@ -22,8 +22,7 @@ export default function Bejelentkezes() {
             email: email,
             password: password,
         };
-        // A hívás előtt lekérjük  a csrf cookie-t
-        await csrf();
+
         // Megrpóbáljuk elküldeni a /login végpontra az adatot
         // hiba esetén kiiratjuk a hibaüzenetet
         try {

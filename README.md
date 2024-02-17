@@ -34,11 +34,11 @@ Nyisd meg VS Code-ban és indítsd el!
 
     import { BrowserRouter } from "react-router-dom";
 
-    <React.StrictMode>
+   
     <BrowserRouter>
-    <App />
+        <App />
     </BrowserRouter>
-    </React.StrictMode>
+   
 
 -   bootstrap telepítése,majd importáljuk az index.js fájlba.
 
@@ -289,12 +289,17 @@ Az api/axios.js fájlba írjuk az alábbi kódot:
 -   létrehozunk egy új Axios példányt a create metódus segítsével.
 -   megadjuk, hogy a kérések azonosítása coockie-k segítségével történik.
 
-    import Axios from "axios";
+    import axios from "axios";
 
-    export default Axios.create({  
-     baseURL:"http://localhost:8000/",
-    withCredentials:true,
-    })
+    //létrehozunk egy új Axios példányt a create metódus segítsével.
+    export default axios.create({
+        // alap backend api kiszolgáló elérési útjának beállítása
+        baseURL: "http://localhost:8000/",
+
+        //beállítjuk, hogy  a kérések azonosítása coockie-k segítségével történik.
+        withCredentials: true,
+    });
+
 
 #### Bejelentkezés  logikája
 
@@ -302,7 +307,7 @@ A **Bejelentkezes** komponensbe importáljuk be az előbb létrehozott saját ax
 
     import  axios  from "../api/axios";
 
-Mostmár használhatjuk az axios post és get metódusait. Mivel ezek asszinkron hívások, ezért a handleSubmit függvényünket át kell alakítanuk asszinkron hívások kezelésére az alábbi módon.
+Most már használhatjuk az axios post és get metódusait. Mivel ezek asszinkron hívások, ezért a handleSubmit függvényünket át kell alakítanuk asszinkron hívások kezelésére az alábbi módon.
 
 - Összegyűjtjük egyetlen objektumban az űrlap adatokat
 - Megpróbáljuk elküldeni a /login végpontra az adatot
@@ -312,19 +317,20 @@ Mostmár használhatjuk az axios post és get metódusait. Mivel ezek asszinkron
     const handleSubmit = async (e) => {
         e.preventDefault();
         //bejelentkezés
-        //Összegyűjtjük egyetlen objektumban az űrlapadatokat
-        const adat={
-            email:email,
-            password:password
-        }
-        // Megrpóbáljuk elküldeni a /login végpontra azadatot
-        //hiba esetén kiiratjuk a hibaüzenetet 
+        //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+        const adat = {
+            email: email,
+            password: password,
+        };
+        // Megrpóbáljuk elküldeni a /login végpontra az adatot
+        // hiba esetén kiiratjuk a hibaüzenetet
         try {
-            await axios.post("/login", {adat});
+            await axios.post("/login", { adat });
         } catch (error) {
-            console.log(error)
+            console.log(error);
         }
     };
+
 
 Hasonló módon kell eljárni a Regisztráció esetén is. 
 
@@ -343,15 +349,15 @@ Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mi
 
 Helyezzük el a Bejelentkezés és a Regisztráció komponensekben si a következő sort: 
 
-const csrf = () => axios.get("/sanctum/csrf-cookie");
+    const csrf = () => axios.get("/sanctum/csrf-cookie");
 
 Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF toketn. Ezt a tokent kell visszaküldenünk a post kérésünkkel együtt ahhoz, hogy azonosítva legyünk, és  a szerver tudja, hogy jogosan használjuk a végpontjait. 
 
 Most így néz ki a login kód: 
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import  axios  from "../api/axios";
+    import React, { useState } from "react";
+    import { Link } from "react-router-dom";
+    import  axios  from "../api/axios";
 
     export default function Bejelentkezes() {
         const [email, setEmail] = useState("");
