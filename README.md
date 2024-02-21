@@ -34,11 +34,9 @@ Nyisd meg VS Code-ban és indítsd el!
 
     import { BrowserRouter } from "react-router-dom";
 
-   
     <BrowserRouter>
         <App />
     </BrowserRouter>
-   
 
 -   bootstrap telepítése,majd importáljuk az index.js fájlba.
 
@@ -293,67 +291,64 @@ Az api/axios.js fájlba írjuk az alábbi kódot:
 
     //létrehozunk egy új Axios példányt a create metódus segítsével.
     export default axios.create({
-        // alap backend api kiszolgáló elérési útjának beállítása
-        baseURL: "http://localhost:8000/",
+    // alap backend api kiszolgáló elérési útjának beállítása
+    baseURL: "http://localhost:8000/",
 
         //beállítjuk, hogy  a kérések azonosítása coockie-k segítségével történik.
         withCredentials: true,
+
     });
 
+#### Bejelentkezés logikája
 
-#### Bejelentkezés  logikája
-
-A **Bejelentkezes** komponensbe importáljuk be az előbb létrehozott saját axios-unkat. 
+A **Bejelentkezes** komponensbe importáljuk be az előbb létrehozott saját axios-unkat.
 
     import  axios  from "../api/axios";
 
 Most már használhatjuk az axios post és get metódusait. Mivel ezek asszinkron hívások, ezért a handleSubmit függvényünket át kell alakítanuk asszinkron hívások kezelésére az alábbi módon.
 
-- Összegyűjtjük egyetlen objektumban az űrlap adatokat
-- Megpróbáljuk elküldeni a /login végpontra az adatot
-- Hiba esetén kiiratjuk a hibaüzenetet 
-
+-   Összegyűjtjük egyetlen objektumban az űrlap adatokat
+-   Megpróbáljuk elküldeni a /login végpontra az adatot
+-   Hiba esetén kiiratjuk a hibaüzenetet
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        //bejelentkezés
-        //Összegyűjtjük egyetlen objektumban az űrlap adatokat
-        const adat = {
-            email: email,
-            password: password,
-        };
-        // Megrpóbáljuk elküldeni a /login végpontra az adatot
-        // hiba esetén kiiratjuk a hibaüzenetet
-        try {
-            await axios.post("/login", { adat });
-        } catch (error) {
-            console.log(error);
-        }
+    e.preventDefault();
+    //bejelentkezés
+    //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+    const adat = {
+    email: email,
+    password: password,
+    };
+    // Megrpóbáljuk elküldeni a /login végpontra az adatot
+    // hiba esetén kiiratjuk a hibaüzenetet
+    try {
+    await axios.post("/login", { adat });
+    } catch (error) {
+    console.log(error);
+    }
     };
 
+Hasonló módon kell eljárni a Regisztráció esetén is.
 
-Hasonló módon kell eljárni a Regisztráció esetén is. 
-
-Ha most megpróbálunk regisztrálni a rendszerbe 419-es hibát kapunk. 
-Ennek oka, hogy nem azonosítottuk magunkat a szerver számára, ezért a szerver elutasította a kérésünket. A post kéréssel együtt el kell küldenünk a csrf tokent is, ami a kérésünk azonosítására szolgál. 
+Ha most megpróbálunk regisztrálni a rendszerbe 419-es hibát kapunk.
+Ennek oka, hogy nem azonosítottuk magunkat a szerver számára, ezért a szerver elutasította a kérésünket. A post kéréssel együtt el kell küldenünk a csrf tokent is, ami a kérésünk azonosítására szolgál.
 
 ![419 CSRF token mismatch](./public/readme_kepek/error419.PNG)
 
 A CSRF token felhasználónként egyedi kód, amit a weboldalak arra használnak, hogy a segítségével kivédjék az olyan támadásokat, amiknél illetéktelen felek egy felhasználó nevében küldenek a weboldalnak parancsokat (CSRF támadás).
 Amikor egy felhasználó valamilyen kritikus funkciót próbál meg elérni egy weboldalon (például törlés vagy jelszóváltoztatás), akkor ahhoz ezt a korábban kapott tokent is el kell küldje a böngészője a szervernek. Mivel a token minden felhasználónál más és más, és nem lehet egyszerűen kitalálni, ezért a CSRF támadás tervezői nem tudják a parancsot a felhasználó nevében elküldeni, mert ahhoz a tokent is tudniuk kellene.
 
-Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mismatch" vagy hasonló hibaüzenetet kapsz, az azt jelenti, hogy a böngésződ által küldött kód hibás. Ez előfordulhat például amiatt, hogy időközben egy másik ablakban kijelentkeztél az oldalról, vagy már nagyon rég nyitottad meg az oldalt, és a token azóta megváltozott vagy a cookie‑d lejárt. 
-
+Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mismatch" vagy hasonló hibaüzenetet kapsz, az azt jelenti, hogy a böngésződ által küldött kód hibás. Ez előfordulhat például amiatt, hogy időközben egy másik ablakban kijelentkeztél az oldalról, vagy már nagyon rég nyitottad meg az oldalt, és a token azóta megváltozott vagy a cookie‑d lejárt.
 
 #### CSRF azonosító token beépítése
 
-Helyezzük el a Bejelentkezés és a Regisztráció komponensekben si a következő sort: 
+Helyezzük el a Bejelentkezés és a Regisztráció komponensekben is a következő sort:
 
     const csrf = () => axios.get("/sanctum/csrf-cookie");
 
-Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF toketn. Ezt a tokent kell visszaküldenünk a post kérésünkkel együtt ahhoz, hogy azonosítva legyünk, és  a szerver tudja, hogy jogosan használjuk a végpontjait. 
+Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF toketn. Ezt a tokent kell visszaküldenünk a post kérésünkkel együtt ahhoz, hogy azonosítva legyünk, és a szerver tudja, hogy jogosan használjuk a végpontjait.
 
-Most így néz ki a login kód: 
+Most így néz ki a login kód:
 
     import React, { useState } from "react";
     import { Link } from "react-router-dom";
@@ -376,7 +371,7 @@ Most így néz ki a login kód:
             // A hívás előtt lekérjük  a csrf cookie-t
             await csrf()
             // Megrpóbáljuk elküldeni a /login végpontra az adatot
-            // hiba esetén kiiratjuk a hibaüzenetet 
+            // hiba esetén kiiratjuk a hibaüzenetet
             try {
                 await axios.post("/login", adat);
             } catch (error) {
@@ -448,11 +443,9 @@ Most így néz ki a login kód:
 
 #### Hibakezelés
 
-Amennyiben nem megfelelő adatokat adunk meg, az api kiszolgáló 422-es hibakóddal tér vissza, és kiolvashatjuk a válaszból a megfelelő mezőkhöz tartozó hibákat. 
-
+Amennyiben nem megfelelő adatokat adunk meg, az api kiszolgáló 422-es hibakóddal tér vissza, és kiolvashatjuk a válaszból a megfelelő mezőkhöz tartozó hibákat.
 
 ![422-es hiba ](./public/readme_kepek/hibakezeles.PNG)
-
 
 Ehhez szükségünk van egy új state-re a Bejelentkezés és a Regisztráció komponensekben.
 
@@ -466,7 +459,7 @@ Az inputmezők mögötti div-eket cseréljük le ilyesmi kódra:
         )}
     </div>
 
-Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint: . 
+Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint: .
 
     } catch (e) {
         if (e.response.status === 422) {
@@ -474,6 +467,74 @@ Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint: .
         }
     }
 
+## AuthContext létrehozása
 
-4.  AuthContext létrehozása
-5.  Layoutok kialakítása
+Context-ek használatával a programozási logikát kiemelhetjük a kompponensekből sé egyetlen közös fájlban kezelhetjük.
+
+-   Hozzuk létre a **contexts/AuthContext.js** fájlt.
+-   Hozzuk létre benne az AuthContext objektumot.
+
+    import { createContext} from "react";
+    export const AuthContext = createContext({});
+
+-   Hozzuk létre az alap Providert a context-hez.
+
+    import { createContext } from "react";
+    const AuthContext = createContext({});
+
+    export const AuthProvider = ({ children }) => {
+
+          return (
+              <AuthContext.Provider
+                  value={{ }}
+              >
+                  {children}
+              </AuthContext.Provider>
+          );
+
+    };
+
+-   Emeljük át a Bejelentkezés és a Regiszter komponensekből a közösen használadnó változókat és metódusokat.
+-   axios import
+-   csrf token lekérésére szolgáló függvény
+-   handleSubmit logika - paraméterként fogja megkapni az elküldendő adatokat a komponenstől. (data)
+-   az error kezelő state
+
+## Contextus felhasználása
+
+### Providerrel öleljük körbe az App komponenst az index-js fájlban
+
+    <AuthProvider>
+        <BrowserRouter>
+            <App />
+        </BrowserRouter>
+    </AuthProvider>
+
+Ne felejtsük el importálni az AuthProvidert
+
+    import { AuthProvider } from "./contexts/AuthContext";
+
+### Bejelentkezes és a Regisztracio komponensekben használjuk a contextust
+
+Importáljuk AuthContext objektumot.
+
+    import { AuthContext } from "../contexts/AuthContext";
+
+A komponensen belül megadjuk a változókat.
+
+    const { handleSubmit, errors } = AuthContext();
+
+A Registracio komponensben a form onSubmit attributumát pedig az alábbiak szerint módosítjuk:
+
+    <form onSubmit={()=>handleSubmit(
+        {
+            "name": name,
+            "email": email,
+            "password": password,
+            "password_confirmation": password_confirmation,
+        }
+    )}>
+
+A Bejelentkezés esetében hasonlóan járunk el.
+
+## Layoutok kialakítása

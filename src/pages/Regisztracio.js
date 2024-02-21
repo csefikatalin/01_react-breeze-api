@@ -1,20 +1,27 @@
 import React, { useState } from "react";
 import axios from "../api/axios";
-
+import { useNavigate } from "react-router-dom";
 
 export default function Regisztracio() {
+    const navigate = useNavigate();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [password_confirmation, setPasswordConfirmation] = useState("");
     const [errors, setErrors] = useState({
-        name:"hiba",
-        email:"hiba",
-        password:"hiba",
-        password_confirmation:"hiba",
+        name: "hiba",
+        email: "hiba",
+        password: "hiba",
+        password_confirmation: "hiba",
     });
-   
-    const csrf = () => axios.get("/sanctum/csrf-cookie");
+
+    let token = "";
+    const csrf = () =>
+        axios.get("/token").then((response) => {
+            console.log(response);
+            token = response.data;
+        });
+    console.log(csrf);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -27,15 +34,17 @@ export default function Regisztracio() {
             email: email,
             password: password,
             password_confirmation: password_confirmation,
+            _token: token,
         };
         // Megrpóbáljuk elküldeni a /login végpontra az adatot
         // hiba esetén kiiratjuk a hibaüzenetet
         try {
             await axios.post("/register", adat);
-         
+            console.log("Siker");
+            //sikeres bejelentkezés esetén elmegyünk  a kezdőlapra
+            navigate("/");
         } catch (error) {
-            console.log(error)
-        
+            console.log(error);
         }
     };
 
