@@ -1,49 +1,24 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "../api/axios";
+import { Link } from "react-router-dom";
+import  useAuthContext  from "../contexts/AuthContext";
 
 export default function Bejelentkezes() {
-    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [errors, setErrors] = useState({
-        name: "hiba",
-        email: "hiba",
-        password: "hiba",
-        password_confirmation: "hiba",
-    });
 
-    //const csrf = () => axios.get("/sanctum/csrf-cookie");
-    let token = "";
-    const csrf = () =>
-        axios.get("/token").then((response) => {
-            console.log(response);
-            token = response.data;
-        });
-    console.log(csrf);
+    const { loginReg, errors } = useAuthContext();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        //lekérjük a csrf tokent
-        await csrf();
+
         //bejelentkezés
         //Összegyűjtjük egyetlen objektumban az űrlap adatokat
         const adat = {
             email: email,
             password: password,
-            _token: token,
         };
 
-        // Megrpóbáljuk elküldeni a /login végpontra az adatot
-        // hiba esetén kiiratjuk a hibaüzenetet
-        try {
-            await axios.post("/login", adat );
-            console.log("siker")
-            //sikeres bejelentkezés esetén elmegyünk  a kezdőlapra
-            navigate("/");
-        } catch (error) {
-            console.log(error);
-        }
+        loginReg(adat, "/login");
     };
 
     return (

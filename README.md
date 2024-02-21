@@ -563,17 +563,22 @@ Context-ek használatával a programozási logikát kiemelhetjük a kompponensek
 -   axios import
 -   csrf token lekérésére szolgáló függvény
 -   handleSubmit logika - paraméterként fogja megkapni az elküldendő adatokat a komponenstől. (data)
--   az error kezelő state
+-   az errort kezelő state
+
+#### Bejelentkezett felhasználó adatainak lekérdezése
+
+- Hozzunk létre a providerünkben egy user state-t. 
+
 
 ## Contextus felhasználása
 
 ### Providerrel öleljük körbe az App komponenst az index-js fájlban
 
-    <AuthProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+        <AuthProvider>
             <App />
-        </BrowserRouter>
-    </AuthProvider>
+        </AuthProvider>
+    </BrowserRouter>
 
 Ne felejtsük el importálni az AuthProvidert
 
@@ -589,17 +594,7 @@ A komponensen belül megadjuk a változókat.
 
     const { handleSubmit, errors } = AuthContext();
 
-A Registracio komponensben a form onSubmit attributumát pedig az alábbiak szerint módosítjuk:
 
-    <form onSubmit={()=>handleSubmit(
-        {
-            "name": name,
-            "email": email,
-            "password": password,
-            "password_confirmation": password_confirmation,
-        }
-    )}>
-
-A Bejelentkezés esetében hasonlóan járunk el.
+A Regisztráció  esetében hasonlóan járunk el.
 
 ## Layoutok kialakítása
