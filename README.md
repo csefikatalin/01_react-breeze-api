@@ -322,7 +322,7 @@ Most már használhatjuk az axios post és get metódusait. Mivel ezek asszinkro
     // Megrpóbáljuk elküldeni a /login végpontra az adatot
     // hiba esetén kiiratjuk a hibaüzenetet
     try {
-    await axios.post("/login", { adat });
+    await axios.post("/login", adat );
     } catch (error) {
     console.log(error);
     }
@@ -342,104 +342,51 @@ Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mi
 
 #### CSRF azonosító token beépítése
 
-Helyezzük el a Bejelentkezés és a Regisztráció komponensekben is a következő sort:
+Helyezzük el a Bejelentkezés és a Regisztráció komponensekben is a következő sorokat:
+Ehhez a backenden készítsük el a token végpontot a web.php-ban.
+A végpont visszaad egy sesson tokent. Ezt a tokent minden szerver felé intézett kéréskor el kell küldenünk a szervernek.
 
-    const csrf = () => axios.get("/sanctum/csrf-cookie");
+**Backend oldal web.php**:
+
+    Route::get('/token', function () {
+        return request()->session()->token();
+    });
+
+**Frontend oldal**:
+
+    let token = "";
+        const csrf = () =>
+            axios.get("/token").then((response) => {
+                console.log(response);
+                token = response.data;
+            });
+
+Majd az adatoknál küldjük el a tokent is.
+
+    const adat = {
+        email: email,
+        password: password,
+        _token: token,
+    };
+
+Hasonlóan járunk el a regisztráció esetében is.
 
 Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF toketn. Ezt a tokent kell visszaküldenünk a post kérésünkkel együtt ahhoz, hogy azonosítva legyünk, és a szerver tudja, hogy jogosan használjuk a végpontjait.
 
-Most így néz ki a login kód:
+#### Navigáció készítése
 
-    import React, { useState } from "react";
-    import { Link } from "react-router-dom";
-    import  axios  from "../api/axios";
+Ezen kívül sikeres bejelentkezés vagy regisztráció esetén rögtön navigáljunk el a Kezdőlapra.
 
-    export default function Bejelentkezes() {
-        const [email, setEmail] = useState("");
-        const [password, setPassword] = useState("");
+Ehhez használjuk a useNavigate Hook-ot.
 
-        const csrf = () => axios.get("/sanctum/csrf-cookie");
+-   Importáljuk az oldal tetején!
+-   Majd hozzunk létre egy változót:
 
-        const handleSubmit = async (e) => {
-            e.preventDefault();
-            //bejelentkezés
-            //Összegyűjtjük egyetlen objektumban az űrlap adatokat
-            const adat={
-                email:email,
-                password:password
-            }
-            // A hívás előtt lekérjük  a csrf cookie-t
-            await csrf()
-            // Megrpóbáljuk elküldeni a /login végpontra az adatot
-            // hiba esetén kiiratjuk a hibaüzenetet
-            try {
-                await axios.post("/login", adat);
-            } catch (error) {
-                console.log(error)
-            }
-        };
+    const navigate = useNavigate();
 
-        return (
-            <div className="m-auto" style={{ maxWidth: "400px" }}>
-                <h1 className="text-center">Bejelentkezés</h1>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3 mt-3">
-                        <label htmlFor="email" className="form-label">
-                            Email:
-                        </label>
-                        <input
-                            type="email"
-                            // value beállítása a state értékére
-                            value={email}
-                            // state értékének módosítása ha változik a beviteli mező tartalma
-                            onChange={(e) => {
-                                setEmail(e.target.value);
-                            }}
-                            className="form-control"
-                            id="email"
-                            placeholder="email"
-                            name="email"
-                        />
-                    </div>
-                    <div>
-                        <span className="text-danger">hiba</span>
-                    </div>
-                    <div className="mb-3">
-                        <label htmlFor="pwd" className="form-label">
-                            Jelszó:
-                        </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => {
-                                setPassword(e.target.value);
-                            }}
-                            className="form-control"
-                            id="pwd"
-                            placeholder="jelszó"
-                            name="pwd"
-                        />
-                        <div>
-                            <span className="text-danger">hiba</span>
-                        </div>
-                    </div>
+-   Végül sikeres bejelentkezés után navigáljunk a kezdőlapra:
 
-                    <div className=" text-center">
-                        <button type="submit" className="btn btn-primary w-100">
-                            Login
-                        </button>
-
-                        <p>
-                            Még nincs felhaszálóneve?
-                            <Link className="nav-link text-info" to="/regisztracio">
-                                Regisztráció
-                            </Link>
-                        </p>
-                    </div>
-                </form>
-            </div>
-        );
-    }
+    navigate("/");
 
 #### Hibakezelés
 
@@ -467,9 +414,127 @@ Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint: .
         }
     }
 
+**Most így néz ki a login kód**:
+
+    import React, { useState } from "react";
+    import { Link, useNavigate } from "react-router-dom";
+    import axios from "../api/axios";
+
+    export default function Bejelentkezes() {
+        const navigate = useNavigate();
+        const [email, setEmail] = useState("");
+        const [password, setPassword] = useState("");
+        const [errors, setErrors] = useState({
+            name: "hiba",
+            email: "hiba",
+            password: "hiba",
+            password_confirmation: "hiba",
+        });
+
+        //const csrf = () => axios.get("/sanctum/csrf-cookie");
+        let token = "";
+        const csrf = () =>
+            axios.get("/token").then((response) => {
+                console.log(response);
+                token = response.data;
+            });
+        console.log(csrf);
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            //lekérjük a csrf tokent
+            await csrf();
+            //bejelentkezés
+            //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+            const adat = {
+                email: email,
+                password: password,
+                _token: token,
+            };
+
+            // Megrpóbáljuk elküldeni a /login végpontra az adatot
+            // hiba esetén kiiratjuk a hibaüzenetet
+            try {
+                await axios.post("/login", adat );
+                console.log("siker")
+                //sikeres bejelentkezés esetén elmegyünk  a kezdőlapra
+                navigate("/");
+            } catch (error) {
+                console.log(error);
+            }
+        };
+
+        return (
+            <div className="m-auto" style={{ maxWidth: "400px" }}>
+                <h1 className="text-center">Bejelentkezés</h1>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3 mt-3">
+                        <label htmlFor="email" className="form-label">
+                            Email:
+                        </label>
+                        <input
+                            type="email"
+                            // value beállítása a state értékére
+                            value={email}
+                            // state értékének módosítása ha változik a beviteli mező tartalma
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                            }}
+                            className="form-control"
+                            id="email"
+                            placeholder="email"
+                            name="email"
+                        />
+                    </div>
+                    <div>
+                        {errors.email && (
+                            <span className="text-danger">{errors.email[0]}</span>
+                        )}
+                    </div>
+                    <div className="mb-3">
+                        <label htmlFor="pwd" className="form-label">
+                            Jelszó:
+                        </label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                            }}
+                            className="form-control"
+                            id="pwd"
+                            placeholder="jelszó"
+                            name="pwd"
+                        />
+                        <div>
+                            {errors.password && (
+                                <span className="text-danger">
+                                    {errors.password[0]}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className=" text-center">
+                        <button type="submit" className="btn btn-primary w-100">
+                            Login
+                        </button>
+
+                        <p>
+                            Még nincs felhaszálóneve?
+                            <Link className="nav-link text-info" to="/regisztracio">
+                                Regisztráció
+                            </Link>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        );
+    }
+
 ## AuthContext létrehozása
 
-Context-ek használatával a programozási logikát kiemelhetjük a kompponensekből sé egyetlen közös fájlban kezelhetjük.
+Context-ek használatával a programozási logikát kiemelhetjük a kompponensekből és egyetlen közös fájlban kezelhetjük.
 
 -   Hozzuk létre a **contexts/AuthContext.js** fájlt.
 -   Hozzuk létre benne az AuthContext objektumot.
