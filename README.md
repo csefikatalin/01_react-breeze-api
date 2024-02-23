@@ -287,16 +287,11 @@ Az api/axios.js fájlba írjuk az alábbi kódot:
 
 -   importáljuk az Axios objektumot
 -   létrehozunk egy új Axios példányt a create metódus segítsével.
--   megadjuk, hogy a kérések azonosítása coockie-k segítségével történik.
+-   megadjuk, hogy a kérések azonosítása cookie-k segítségével történik.
 
-    import axios from "axios";
-
-    //létrehozunk egy új Axios példányt a create metódus segítsével.
+    import axios from "axios";   
     export default axios.create({
-    // alap backend api kiszolgáló elérési útjának beállítása
-    baseURL: "http://localhost:8000",
-
-        //beállítjuk, hogy  a kérések azonosítása coockie-k segítségével történik.
+        baseURL: "http://localhost:8000",
         withCredentials: true,
 
     });
@@ -314,15 +309,11 @@ Most már használhatjuk az axios post és get metódusait. Mivel ezek asszinkro
 -   Hiba esetén kiiratjuk a hibaüzenetet
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        //bejelentkezés
-        //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+        e.preventDefault();       
         const adat = {
             email: email,
             password: password,
-        };
-        // Megrpóbáljuk elküldeni a /login végpontra az adatot
-        // hiba esetén kiiratjuk a hibaüzenetet
+        };       
         try {
             await axios.post("/login", adat );
         } catch (error) {
@@ -550,9 +541,7 @@ Context-ek használatával a programozási logikát kiemelhetjük a kompponensek
 
     import { createContext } from "react";
     const AuthContext = createContext({});
-
     export const AuthProvider = ({ children }) => {
-
           return (
               <AuthContext.Provider
                   value={{ }}
@@ -560,7 +549,6 @@ Context-ek használatával a programozási logikát kiemelhetjük a kompponensek
                   {children}
               </AuthContext.Provider>
           );
-
     };
 
 Végül exportájuk a contextust. 
@@ -597,9 +585,7 @@ Végül exportájuk a contextust.
     import { createContext, useContext, useState } from "react";
     import axios from "../api/axios";
     import { useNavigate } from "react-router-dom";
-
     const AuthContext = createContext();
-
     export const AuthProvider = ({ children }) => {
         const navigate = useNavigate();
         const [user, setUser] = useState(null);
