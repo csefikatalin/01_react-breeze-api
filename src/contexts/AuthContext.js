@@ -8,10 +8,10 @@ export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [errors, setErrors] = useState({
-        name: "hiba",
-        email: "hiba",
-        password: "hiba",
-        password_confirmation: "hiba",
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
     });
     //const csrf = () => axios.get("/sanctum/csrf-cookie");
     let token = "";
@@ -26,10 +26,10 @@ export const AuthProvider = ({ children }) => {
         const { data } = await axios.get("/api/user");
         setUser(data);
     };
-    const logout = () => {
-        csrf()
+    const logout = async () => {
+        await csrf()
         console.log(token)
-        axios.post("/logout").then((resp) => {
+        axios.post("/logout",{_token:token}).then((resp) => {
             setUser(null);
             console.log(resp);
         });
@@ -57,7 +57,9 @@ export const AuthProvider = ({ children }) => {
             navigate("/");
         } catch (error) {
             console.log(error);
-            setErrors(error);
+            if (error.response.status === 422) {
+                setErrors(error.response.data.errors);
+            }
         }
     };
 

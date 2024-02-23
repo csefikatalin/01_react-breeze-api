@@ -4,6 +4,7 @@ import useAuthContext from "../contexts/AuthContext";
 export default function Kezdolap() {
     const { user, getUser } = useAuthContext();
     useEffect(() => {
+        console.log(user)
         if (!user) {
             getUser();
         }
