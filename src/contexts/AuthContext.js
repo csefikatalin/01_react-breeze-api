@@ -20,13 +20,19 @@ export const AuthProvider = ({ children }) => {
             console.log(response);
             token = response.data;
         });
-    console.log(csrf);
+
     //bejelentkezett felhasználó adatainak lekérdezése
     const getUser = async () => {
         const { data } = await axios.get("/api/user");
         setUser(data);
     };
-
+    const logout = () => {
+        axios.post("/logout", { _token: token }).then((resp) => {
+            setUser(null);
+            console.log(resp);
+        });
+    };
+    logout()
     const loginReg = async ({ ...adat }, vegpont) => {
         adat._token = token;
         //lekérjük a csrf tokent
@@ -39,15 +45,21 @@ export const AuthProvider = ({ children }) => {
         try {
             await axios.post(vegpont, adat);
             console.log("siker");
-            //sikeres bejelentkezés esetén elmegyünk  a kezdőlapra
+            //sikeres bejelentkezés/regisztráció esetén
+            //Lekérdezzük a usert
+            await getUser();
+            //elmegyünk  a kezdőlapra
             navigate("/");
         } catch (error) {
             console.log(error);
+            setErrors(error);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ loginReg, errors, getUser, user }}>
+        <AuthContext.Provider
+            value={{ logout, loginReg, errors, getUser, user }}
+        >
             {children}
         </AuthContext.Provider>
     );
