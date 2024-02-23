@@ -27,14 +27,19 @@ export const AuthProvider = ({ children }) => {
         setUser(data);
     };
     const logout = () => {
-        axios.post("/logout", { _token: token }).then((resp) => {
+        csrf()
+        console.log(token)
+        axios.post("/logout").then((resp) => {
             setUser(null);
             console.log(resp);
         });
     };
-    logout()
+    
     const loginReg = async ({ ...adat }, vegpont) => {
+        await csrf()
+        console.log(token)
         adat._token = token;
+        console.log(adat)
         //lekérjük a csrf tokent
         await csrf();
         //bejelentkezés
