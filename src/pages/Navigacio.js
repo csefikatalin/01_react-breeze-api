@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import useAuthContext from "../contexts/AuthContext";
 
 export default function Navigacio() {
-    const { user, logout } = useAuthContext();
+    const { user, logout } = useAuthContext(); 
+ 
     return (
         <nav className="navbar navbar-expand-sm bg-light">
             <div className="container-fluid">
@@ -16,7 +17,7 @@ export default function Navigacio() {
                     {user ? (
                         <>
                             <li className="navbar-item">
-                                <button className="nav-link" onClick={logout}>
+                                <button className="nav-link" onClick={()=>{logout()}}>
                                     Kijelentkezés
                                 </button>
                             </li>
