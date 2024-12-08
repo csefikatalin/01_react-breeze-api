@@ -359,18 +359,15 @@ Az api/axios.js fájlba írjuk az alábbi kódot:
 -   létrehozunk egy új Axios példányt a create metódus segítsével.
 -   megadjuk, hogy a kérések azonosítása cookie-k segítségével történik.
 
-<code>
+```javascript
 import axios from "axios";
-
-//létrehozunk egy új Axios példányt a create metódus segítsével.
-export const  myAxios=axios.create({
-    // alap backend api kiszolgáló elérési útjának beállítása
+// Létrehozunk egy új Axios példányt a create metódus segítségével.
+export const myAxios = axios.create({
+    // Alap backend API kiszolgáló elérési útjának beállítása
     baseURL: "http://localhost:8000",
-    
-    //beállítjuk, hogy  a kérések azonosítása coockie-k segítségével történik.
+    // Beállítjuk, hogy a kérések azonosítása cookie-k segítségével történik.
     withCredentials: true,
-});
-</code>
+});```
 
 
 #### Bejelentkezés logikája
