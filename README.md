@@ -372,6 +372,9 @@ export const myAxios = axios.create({
 
 #### A CSRF token elhelyezése a kérés fejlécében
 
+A CSRF token lekérése nem automatikusan történik a cookiek közül, akkor kell ezt a kódot használni. 
+Ez beállítja a kérés fejlécébe az X-XSRF-TOKEN értékét a backendtől kapott CSRF tokenre. Ez szükséges a kérés azonosításához. 
+
 ```javascript
 myAxios.interceptors.request.use(
   (config) => {
@@ -405,18 +408,20 @@ Most már használhatjuk az axios post és get metódusait. Mivel ezek asszinkro
 -   Megpróbáljuk elküldeni a /login végpontra az adatot
 -   Hiba esetén kiiratjuk a hibaüzenetet
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();       
-        const adat = {
-            email: email,
-            password: password,
-        };       
-        try {
-            await axios.post("/login", adat );
-        } catch (error) {
-            console.log(error);
-        }
-    };
+```javascript
+const handleSubmit = async (e) => {
+    e.preventDefault();       
+    const adat = {
+        email: email,
+        password: password,
+    };       
+    try {
+        await axios.post("/login", adat );
+    } catch (error) {
+        console.log(error);
+    }
+};
+```
 
 Hasonló módon kell eljárni a Regisztráció esetén is.
 
@@ -428,40 +433,18 @@ Ennek oka, hogy nem azonosítottuk magunkat a szerver számára, ezért a szerve
 A CSRF token felhasználónként egyedi kód, amit a weboldalak arra használnak, hogy a segítségével kivédjék az olyan támadásokat, amiknél illetéktelen felek egy felhasználó nevében küldenek a weboldalnak parancsokat (CSRF támadás).
 Amikor egy felhasználó valamilyen kritikus funkciót próbál meg elérni egy weboldalon (például törlés vagy jelszóváltoztatás), akkor ahhoz ezt a korábban kapott tokent is el kell küldje a böngészője a szervernek. Mivel a token minden felhasználónál más és más, és nem lehet egyszerűen kitalálni, ezért a CSRF támadás tervezői nem tudják a parancsot a felhasználó nevében elküldeni, mert ahhoz a tokent is tudniuk kellene.
 
-Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mismatch" vagy hasonló hibaüzenetet kapsz, az azt jelenti, hogy a böngésződ által küldött kód hibás. Ez előfordulhat például amiatt, hogy időközben egy másik ablakban kijelentkeztél az oldalról, vagy már nagyon rég nyitottad meg az oldalt, és a token azóta megváltozott vagy a cookie‑d lejárt.
+Ha "érvénytelen CSRF token", "CSRF token missing or incorrect", "CSRF token mismatch" vagy hasonló hibaüzenetet kapsz, az azt jelenti, hogy a böngésződ által küldött kód hibás. Ez előfordulhat például amiatt, hogy időközben egy másik ablakban kijelentkeztél az oldalról, vagy már nagyon rég nyitottad meg az oldalt, és a token azóta megváltozott vagy a cookie lejárt.
 
 #### CSRF azonosító token beépítése
 
-Helyezzük el a Bejelentkezés és a Regisztráció komponensekben is a következő sorokat:
-Ehhez a backenden készítsük el a token végpontot a web.php-ban.
-A végpont visszaad egy sesson tokent. Ezt a tokent minden szerver felé intézett kéréskor el kell küldenünk a szervernek.
 
-**Backend oldal web.php**:
+**Frontend oldal Bejelentkezés és Regisztráció komponensekben**:
 
-    Route::get('/token', function () {
-        return request()->session()->token();
-    });
+```javascript
+const csrf = () => myAxios.get("/sanctum/csrf-cookie");
+```
 
-**Frontend oldal Bejelentkezés sé Regisztráció komponensekben**:
-
-    let token = "";
-    const csrf = () =>
-        axios.get("/token").then((response) => {
-            console.log(response);
-            token = response.data;
-        });
-
-Majd az adatokkal együtt küldjük el a tokent is.
-
-    const adat = {
-        email: email,
-        password: password,
-        _token: token,
-    };
-
-Hasonlóan járunk el a regisztráció esetében is.
-
-Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF toketn. Ezt a tokent kell visszaküldenünk a post kérésünkkel együtt ahhoz, hogy azonosítva legyünk, és a szerver tudja, hogy jogosan használjuk a végpontjait.
+Ezzel lekérjük a backendtől az adott kéréshez tartozó CSRF tokent, ami a további kérések során az előbbi fejléc beállításoknak köszönhetően automatikusan elküldésre kerül a szerver felé. Ezzel azonosítjuk magunkat a szerver felé. 
 
 #### Navigáció készítése
 
@@ -486,26 +469,32 @@ Amennyiben nem megfelelő adatokat adunk meg, az api kiszolgáló 422-es hibakó
 
 Ehhez szükségünk van egy új state-re a Bejelentkezés és a Regisztráció komponensekben.
 
+```javascript
     const [errors, setErrors] = useState("");
+```
 
 Az inputmezők mögötti div-eket cseréljük le ilyesmi kódra:
 
+```javascript
     <div>
         {errors.email && (
             <span className="text-danger">{errors.email[0]}</span>
         )}
     </div>
+```
 
 Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint: 
 
+```javascript
     } catch (e) {
         if (e.response.status === 422) {
             setErrors(e.response.data.errors);
         }
-    }
+```
 
 **Most így néz ki a login kód**:
 
+```javascript
     import React, { useState } from "react";
     import { Link, useNavigate } from "react-router-dom";
     import axios from "../api/axios";
@@ -522,13 +511,7 @@ Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint:
         });
 
         
-        let token = "";
-        const csrf = () =>
-            axios.get("/token").then((response) => {
-                console.log(response);
-                token = response.data;
-            });
-        console.log(csrf);
+        const csrf = () => myAxios.get("/sanctum/csrf-cookie");
 
         const handleSubmit = async (e) => {
             e.preventDefault();
@@ -539,7 +522,6 @@ Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint:
             const adat = {
                 email: email,
                 password: password,
-                _token: token,
             };
 
             // Megrpóbáljuk elküldeni a /login végpontra az adatot
@@ -623,6 +605,7 @@ Módosítsuk a handleSubmit függvény catch ágát az alábbiak szerint:
             </div>
         );
     }
+```
 
 ## AuthContext létrehozása
 
@@ -631,11 +614,14 @@ Context-ek használatával a programozási logikát kiemelhetjük a kompponensek
 -   Hozzuk létre a **contexts/AuthContext.js** fájlt.
 -   Hozzuk létre benne az AuthContext objektumot.
 
+```javascript
     import { createContext} from "react";
     export const AuthContext = createContext({});
+```
 
 -   Hozzuk létre az alap Providert a context-hez.
 
+```javascript
     import { createContext } from "react";
     const AuthContext = createContext({});
     export const AuthProvider = ({ children }) => {
@@ -647,12 +633,15 @@ Context-ek használatával a programozási logikát kiemelhetjük a kompponensek
               </AuthContext.Provider>
           );
     };
+```
 
 Végül exportájuk a contextust. 
 
+```javascript
     export default function useAuthContext() {
         return useContext(AuthContext);
     }
+```
 
 
 -   Emeljük át a Bejelentkezés és a Regiszter komponensekből a közösen használadnó változókat és metódusokat.
@@ -670,82 +659,83 @@ Végül exportájuk a contextust.
 
 -Készítsük el a getUser metódust. Az /api/user végpontról tudjuk lekérni a bejelentkezett felhasználó adatait. A setUser függvénnyel beállítjuk a user váltzó értékét, miután a végpontról megérkezetta válasz. 
 
+```javascript
     //bejelentkezett felhasználó adatainak lekérdezése
     const getUser = async () => {
         const { data } = await axios.get("/api/user");
         setUser(data);
     };
+```
 
 
 #### Most így néz ki az AuthContext.js
 
-    import { createContext, useContext, useState } from "react";
-    import axios from "../api/axios";
-    import { useNavigate } from "react-router-dom";
-    const AuthContext = createContext();
-    export const AuthProvider = ({ children }) => {
-        const navigate = useNavigate();
-        const [user, setUser] = useState(null);
-        const [errors, setErrors] = useState({
-            name: "",
-            email: "",
-            password: "",
-            password_confirmation: "",
-        });
-        
-        let token = "";
-        const csrf = () =>
-            axios.get("/token").then((response) => {
-                console.log(response);
-                token = response.data;
-            });
+```javascript
+import { createContext, useContext, useState } from "react";
+import { myAxios } from "../api/axios";
+import { useNavigate } from "react-router-dom";
 
-        //bejelentkezett felhasználó adatainak lekérdezése
-        const getUser = async () => {
-            const { data } = await axios.get("/api/user");
-            setUser(data);
-        };
-        
-        
-        const loginReg = async ({ ...adat }, vegpont) => {
-            await csrf()
-            console.log(token)
-            adat._token = token;
-            console.log(adat)
-            //lekérjük a csrf tokent
-            await csrf();
-            //bejelentkezés
-            //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+const AuthContext = createContext();
 
-            // Megrpóbáljuk elküldeni a /login végpontra az adatot
-            // hiba esetén kiiratjuk a hibaüzenetet
-            try {
-                await axios.post(vegpont, adat);
-                console.log("siker");
-                //sikeres bejelentkezés/regisztráció esetén
-                //Lekérdezzük a usert
-                await getUser();
-                //elmegyünk  a kezdőlapra
-                navigate("/");
-            } catch (error) {
-                console.log(error);
-                if (error.response.status === 422) {
-                    setErrors(error.response.data.errors);
-                }
-            }
-        };
+export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    password_confirmation: "",
+  });
+  const csrf = () => myAxios.get("/sanctum/csrf-cookie");
 
-        return (
-            <AuthContext.Provider
-                value={{  loginReg, errors, getUser, user }}
-            >
-                {children}
-            </AuthContext.Provider>
-        );
-    };
-    export default function useAuthContext() {
-        return useContext(AuthContext);
+  //bejelentkezett felhasználó adatainak lekérdezése
+  const getUser = async () => {
+    const { data } = await myAxios.get("/api/user");
+    console.log(data)
+    setUser(data);
+  };
+  const logout = async () => {
+    await csrf();
+
+    myAxios.post("/logout").then((resp) => {
+      setUser(null);
+      console.log(resp);
+    });
+  };
+
+  const loginReg = async ({ ...adat }, vegpont) => {
+    //lekérjük a csrf tokent
+    await csrf();
+    console.log(adat,vegpont);
+
+    try {
+      await myAxios.post(vegpont, adat);
+      console.log("siker");
+      //sikeres bejelentkezés/regisztráció esetén
+      //Lekérdezzük a usert
+      //await getUser();
+      //elmegyünk  a kezdőlapra
+      getUser()
+      navigate("/");
+      
+    } catch (error) {
+      console.log(error);
+      if (error.response.status === 422) {
+        setErrors(error.response.data.errors);
+      }
     }
+  };
+
+  return (
+    <AuthContext.Provider value={{ logout, loginReg, errors, getUser, user }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+export default function useAuthContext() {
+  return useContext(AuthContext);
+}
+```
 
 ## Contextus felhasználása
 
@@ -775,58 +765,58 @@ A komponensen belül megadjuk a változókat.
 
 A Regisztráció  esetében hasonlóan járunk el.
 
-Most így néz ki a bejelentkzés komponens eleje: 
+Most így néz ki a bejelentkezés komponens eleje: 
 
-    import React, { useState } from "react";
-    import { Link } from "react-router-dom";
-    import  useAuthContext  from "../contexts/AuthContext";
+```javascript
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import useAuthContext from "../contexts/AuthContext";
 
-    export default function Bejelentkezes() {
-        const [email, setEmail] = useState("");
-        const [password, setPassword] = useState("");
 
-        const { loginReg, errors } = useAuthContext();
+export default function Bejelentkezes() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-        const handleSubmit = async (e) => {
-            e.preventDefault();
+  const navigate = useNavigate();
+  const { loginReg, errors } = useAuthContext();
 
-            //bejelentkezés
-            //Összegyűjtjük egyetlen objektumban az űrlap adatokat
-            const adat = {
-                email: email,
-                password: password,
-            };
-            //*********** ITT HÍVJUK MEG useAuthContext-ből a loginReg függvényt. **************//
-            loginReg(adat, "/login");
-        };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        return (
-            <div className="m-auto" style={{ maxWidth: "400px" }}>
-           /************************ STB ***************************/
+    //Összegyűjtjük egyetlen objektumban az űrlap adatokat
+    const adat = {
+      email: email,
+      password: password,
+    };
+  
+    loginReg(adat, "/login");
+  };
+
+  return (
+    <div className="m-auto" style={{ maxWidth: "400px" }}>
+      
+    /************************ STB ***************************/
+```
 
 #### A Bejelentkezett felhasználó adatainak megjelenítése
 
 A Kezdolap komponensben jelenítsük meg a bejelentkezett felhasználó nevét. 
 Ehhez használjuk a useAuthContext() függvényünket. 
 
-    import React, { useEffect } from "react";
-    import useAuthContext from "../contexts/AuthContext";
+```javascript
+import useAuthContext from "../contexts/AuthContext";
 
-    export default function Kezdolap() {
-        const { user, getUser } = useAuthContext();
-        useEffect(() => {
-            console.log(user)
-            if (!user) {
-                getUser();
-            }
-        });
-        return (
-            <div>
-                <h1>Kezdőlap</h1>
-                <p>Bejelentkezett felhasználó: {user?.name}</p>
-            </div>
-        );
-    }
+export default function Kezdolap() {
+     const { user } = useAuthContext(); 
+
+    return (
+        <div>
+            <h1>Kezdőlap</h1>
+            <p>Bejelentkezett felhasználó: { user===null?"Nincs bejelentkezett felhasználó!":user.name }</p>
+        </div>
+    );
+}
+```
 
 #### Kijelentkezés logikájának elkészítése
 
@@ -834,14 +824,16 @@ Az **AuthProviderben** létrehozunk egy függvényt, amely a kijelentkezés logi
 A /logout végpont meghívásával kezdeményezni a kijelentkzést. 
 Az azonosításhoz itt is le kell kérni a tokent a szerverről, és a kéréssel együtt elküldeni adatként.  
 
-    const logout = async () => {
-        await csrf()
-        console.log(token)
-        axios.post("/logout",{_token:token}).then((resp) => {
-            setUser(null);
-            console.log(resp);
-        });
-    };
+```javascript
+ const logout = async () => {
+    await csrf();
+
+    myAxios.post("/logout").then((resp) => {
+      setUser(null);
+      console.log(resp);
+    });
+  };
+```
 
 Ne felejtsük el a Provider value értékei között felsorolni a logout függvényt is. 
 
@@ -859,48 +851,50 @@ Az alapszerkezet valahogy így fog kinézni:
 
 A két React.Fragment elem közé kell betennünk a kívánt menüpontokat. A végső kód: 
 
-    import React from "react";
-    import { Link } from "react-router-dom";
-    import useAuthContext from "../contexts/AuthContext";
+```javascript
+import React from "react";
+import { Link } from "react-router-dom";
+import useAuthContext from "../contexts/AuthContext";
 
-    export default function Navigacio() {
-        const { user, logout } = useAuthContext();
-        return (
-            <nav className="navbar navbar-expand-sm bg-light">
-                <div className="container-fluid">
-                    <ul className="navbar-nav">
-                        <li className="navbar-item">
-                            <Link className="nav-link" to="/">
-                                Kezdőlap
-                            </Link>
-                        </li>
-                        {user ? (
-                            <>
-                                <li className="navbar-item">
-                                    <button className="nav-link" onClick={logout}>
-                                        Kijelentkezés
-                                    </button>
-                                </li>
-                            </>
-                        ) : (
-                            <>
-                                <li className="navbar-item">
-                                    <Link className="nav-link" to="/bejelentkezes">
-                                        Bejelentkezés
-                                    </Link>
-                                </li>
-                                <li className="navbar-item">
-                                    <Link className="nav-link" to="/regisztracio">
-                                        Regisztráció
-                                    </Link>
-                                </li>
-                            </>
-                        )}
-                    </ul>
-                </div>
-            </nav>
-        );
-    }
-
+export default function Navigacio() {
+    const { user, logout } = useAuthContext(); 
+ 
+    return (
+        <nav className="navbar navbar-expand-sm bg-light">
+            <div className="container-fluid">
+                <ul className="navbar-nav">
+                    <li className="navbar-item">
+                        <Link className="nav-link" to="/">
+                            Kezdőlap
+                        </Link>
+                    </li>
+                    {user ? (
+                        <>
+                            <li className="navbar-item">
+                                <button className="nav-link" onClick={()=>{logout()}}>
+                                    Kijelentkezés
+                                </button>
+                            </li>
+                        </>
+                    ) : (
+                        <>
+                            <li className="navbar-item">
+                                <Link className="nav-link" to="/bejelentkezes">
+                                    Bejelentkezés
+                                </Link>
+                            </li>
+                            <li className="navbar-item">
+                                <Link className="nav-link" to="/regisztracio">
+                                    Regisztráció
+                                </Link>
+                            </li>
+                        </>
+                    )}
+                </ul>
+            </div>
+        </nav>
+    );
+}
+```
 
 
