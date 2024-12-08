@@ -367,7 +367,8 @@ export const myAxios = axios.create({
     baseURL: "http://localhost:8000",
     // Beállítjuk, hogy a kérések azonosítása cookie-k segítségével történik.
     withCredentials: true,
-});```
+});
+```
 
 #### A CSRF token elhelyezése a kérés fejlécében
 
@@ -388,7 +389,8 @@ myAxios.interceptors.request.use(
     console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
-);```
+);
+```
 
 
 #### Bejelentkezés logikája
